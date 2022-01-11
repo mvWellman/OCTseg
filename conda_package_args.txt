@@ -1,0 +1,11 @@
+conda install tensorflow-gpu == 1.14.0
+conda install Keras==2.2.4
+conda install numpy==1.16.2
+conda install h5py==2.9.0
+conda install scipy==1.2.1
+conda install tifffile==2019.7.20
+conda install tqdm==4.31.1
+conda install matplotlib==3.0.3
+conda install -c conda-forge visdom==0.1.8.
+conda install -c conda-forge opencv==4.2.0
+conda install tensorflow==1.14.0

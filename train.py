@@ -112,9 +112,18 @@ def main():
     parser.add_argument("--mode", type=str)
     parser.add_argument("--port", type=int)
 
+
     # assign the first part of args. The second part will ba assigned after reading parameter from log file
     args = parser.parse_args()
+    ## ------ PARAMS CHANGED BY DANIEL SHAO FOR DEBUGGING ------ ##
+    args.isTest = 1
+    args.models_path = 'models\Group18 and test results'
+    args.exp_def = 'AllLoss_critique-newoutCh6_Epoch20k_w1_100_1000_1000'
+
+    ## ---------------------------------------------------------- ##
     experiment_def = args.exp_def
+
+
     isTest = args.isTest
     isTrain = 0 if args.isTest else 1
     models_path = args.models_path
