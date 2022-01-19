@@ -121,8 +121,11 @@ def main():
     args.exp_def = 'AllLoss_critique-newoutCh6_Epoch20k_w1_100_1000_1000'
     args.is_critique = 0
     args.testEpoch = 500
-    args.testDir = "D:\\MLIntravascularPolarimetry-1000 slices\\MLCardioPullbacks\\Annotations\\Batch_1-4"
-
+    args.testDir = 'D:\\MLIntravascularPolarimetry-1000 slices\\MLCardioPullbacks\\INI-pstif-im tif-segC-SegPolar\\' # "D:\\MLIntravascularPolarimetry-1000 slices\\MLCardioPullbacks\\Annotations\\Batch_1-4"
+    args.isCarts = 1
+    args.saveTestDir = 'D:\\models\\All_segmentations\\'
+    if not os.path.exists(args.saveTestDir):
+        os.makedirs(args.saveTestDir)
     ## ---------------------------------------------------------- ##
     experiment_def = args.exp_def
 
@@ -218,7 +221,7 @@ def main():
             print('Model is initialized.')
     elif isTest:
         iEpoch = args.testEpoch
-        model_template = load_model(save_file_name % iEpoch)
+        model_template = load_model(save_file_name % iEpoch, compile=False) # changed by daniel. previously no compile argument
         print('model at epoch %d is loaded.' % args.testEpoch)
 
     if numGPU > 1:
@@ -226,12 +229,13 @@ def main():
     else:
         model = model_template
     optimizer = getattr(optimizers, args.optimizer)
-    if args.is_critique:
-        model.compile(optimizer=optimizer(lr=args.lr, decay=args.lr_decay),
+    if isTrain:
+        if args.is_critique:
+            model.compile(optimizer=optimizer(lr=args.lr, decay=args.lr_decay),
                       loss=[get(multi_loss(loss_weight[:-1], outCh)), get(lambda y_, y: 0.5 - 0.5 * y)],
                       loss_weights=[sum(loss_weight[:-1]), loss_weight[-1]])
-    else:
-        model.compile(optimizer=optimizer(lr=args.lr, decay=args.lr_decay), loss=get(multi_loss(loss_weight, outCh)))
+        else:
+            model.compile(optimizer=optimizer(lr=args.lr, decay=args.lr_decay), loss=get(multi_loss(loss_weight, outCh)))
 
     # load data
     if args.testDir == '-':
@@ -373,23 +377,30 @@ def main():
     else:
         files = glob.glob(os.path.join(args.testDir, '*.pstif'))
         for f in tqdm(files):
-            im = tifffile.imread(f)
-            im = im.astype(np.float32) / 255
-            im = np.moveaxis(np.reshape(im, (-1, 3,) + im.shape[1:]), 1, -1)
-            im = polar_zoom(im, scale=im_shape[1] / im.shape[1])
-            shift = (0, 128, 256, 384)
-            out_ = np.zeros(im.shape[:-1] + (len(shift),))
-            for j in range(len(shift)):
-                im_ = im[:, :, np.r_[shift[j]:im_shape[2], 0:shift[j]]]
-                out = model.predict(im_, batch_size=nBatch, verbose=1)
-                if args.is_critique:
-                    out = np.array(out[0])
-                out = np.argmax(out, -1)
-                out_[..., j] = out[:, :, np.r_[(512 - shift[j]):im_shape[2], 0:(512 - shift[j])]]
-            out = np.median(out_, axis=3)
-            tifffile.imwrite(f[:-6] + '-fwd.tif', out.astype(np.uint8))
-            tifffile.imwrite(f[:-6] + '-fwd-post.tif', postprocessing(out.astype(np.uint8)))
-            tifffile.imwrite(f[:-6] + '-im.tif', (im * 255).astype(np.uint8).squeeze())
+            if args.saveTestDir is None:
+                savedir = f[:-6]
+            else:
+                split_name = f.split('\\')
+                filename = split_name[-1].split('.')[0]
+                savedir = args.saveTestDir + filename
+            if not os.path.exists(savedir):
+                im = tifffile.imread(f)
+                im = im.astype(np.float32) / 255
+                im = np.moveaxis(np.reshape(im, (-1, 3,) + im.shape[1:]), 1, -1)
+                im = polar_zoom(im, scale=im_shape[1] / im.shape[1])
+                shift = (0, 128, 256, 384)
+                out_ = np.zeros(im.shape[:-1] + (len(shift),))
+                for j in range(len(shift)):
+                    im_ = im[:, :, np.r_[shift[j]:im_shape[2], 0:shift[j]]]
+                    out = model.predict(im_, batch_size=nBatch, verbose=1)
+                    if args.is_critique or True is True: # temporarily changed by daniel to examine shape problem
+                        out = np.array(out[0])
+                    out = np.argmax(out, -1)
+                    out_[..., j] = out[:, :, np.r_[(512 - shift[j]):im_shape[2], 0:(512 - shift[j])]]
+                out = np.median(out_, axis=3)
+                tifffile.imwrite(savedir + '-fwd.tif', out.astype(np.uint8)) # save full file at test location with identical name, concatenated "fwd, fwd-post, im"
+                tifffile.imwrite(savedir + '-fwd-post.tif', postprocessing(out.astype(np.uint8)))
+                tifffile.imwrite(savedir + '-im.tif', (im * 255).astype(np.uint8).squeeze())
 
 
 if __name__ == '__main__':
