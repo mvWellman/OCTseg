@@ -12,7 +12,7 @@ from __future__ import absolute_import, division, print_function
 
 import os
 
-from ...util.load_data import make_dataset, load_train_data
+from ...util.load_datas import make_dataset, load_train_data
 from ...util.process_oct_folder import process_oct_folder
 
 
