@@ -9,6 +9,7 @@
 
 import tensorflow as tf
 import numpy as np
+import keras
 
 
 def dice_loss(label, target):
@@ -86,11 +87,18 @@ def multi_loss(loss_weight, numClass):
     loss_weight = np.array(loss_weight)
 
     def multi_loss_(label, target):
+        ## changed by daniel because error with unknown rank when compiling if it isnt 4 dimensional
+        if len(label.shape) == 2:
+            label = tf.expand_dims(label, axis=-1)
+            label = tf.expand_dims(label, axis=-1)
+        ## end change
         shape = label.get_shape()
         # just evaluate at the center slice in 3D inputs
         if len(shape) == 5 and shape[1].value is not None:
             i = shape[1].value // 2
             label, target = label[:, i, ...], target[:, i, ...]
+
+
         with tf.name_scope('multi_loss'):
             if loss_weight.size < numClass:
                 print('Loss weight size is less than the number of class. Got %d and %d. Dice loss is selected.' %
@@ -165,11 +173,39 @@ def mask_boundary_neighborhood(label, r=5, numClass=2):
         fg = label_[..., class_id:(class_id + 1)] > 0
         if tf.rank(fg) == 3:
             tf.expand_dims(fg, axis=-1)
+        if len(fg.shape) == 2:
+            fg = tf.expand_dims(fg, axis=-1)
+            fg = tf.expand_dims(fg, axis=-1)
         bg = tf.logical_not(fg)
+        ## ---CHANGED FILTER TO A SPECIFIC VARIABLE - DANIEL -- ##
+
+
+        #attempt 1
+        #before = tf.keras.layers.Conv2D(filters=1, kernel_size=r, padding="same", input_shape=(None, None, 1)) #(fg)
+        #after = tf.keras.layers.Conv2D(filters=1, kernel_size=r, padding="same") #works when you remove the fg argument
+        #before = before(bg)
+        #after = after(fg)
+
+
+        # attempt 2
+   #     with tf.variable_scope('filter1', reuse=tf.AUTO_REUSE):
+            #filter1 = tf.get_variable('filter1', [r, 1, 1, 1], initializer=tf.truncated_normal_initializer(stddev=5e-2, dtype=tf.float32, ))
+   #         filter1 = tf.Variable(tf.truncated_normal([r, r, 1, 1], stddev=5e-2))
+   #     with tf.variable_scope('filter2', reuse=tf.AUTO_REUSE):
+   #         filter2 = tf.get_variable('filter2', [r, r, 1, 1], initializer=tf.truncated_normal_initializer(stddev=5e-2, dtype=tf.float32))
+    #    before = tf.logical_xor(tf.nn.conv2d(tf.cast(bg, tf.float32), filter=filter1, padding="SAME") > 0, bg)
+
+     #   after = tf.logical_xor(tf.nn.conv2d(tf.cast(fg, tf.float32),
+      #                                      filter=filter2, padding="SAME") > 0, fg)
+
+
+        # ORIGINAL
         before = tf.logical_xor(tf.nn.conv2d(tf.cast(bg, tf.float32),
                                              filter=tf.ones([r, 1, 1, 1]), padding="SAME") > 0, bg)
         after = tf.logical_xor(tf.nn.conv2d(tf.cast(fg, tf.float32),
                                             filter=tf.ones([r, 1, 1, 1]), padding="SAME") > 0, fg)
+        # ----------------------------------------------------------- #
+
         return tf.logical_or(before, after)
 
     out = mask_boundary_neighborhood_(label, 1)

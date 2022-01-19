@@ -117,8 +117,11 @@ def main():
     args = parser.parse_args()
     ## ------ PARAMS CHANGED BY DANIEL SHAO FOR DEBUGGING ------ ##
     args.isTest = 1
-    args.models_path = 'models\Group18 and test results'
+    args.models_path = 'D:\\models\\Group18 and test results\\'
     args.exp_def = 'AllLoss_critique-newoutCh6_Epoch20k_w1_100_1000_1000'
+    args.is_critique = 0
+    args.testEpoch = 500
+    args.testDir = "D:\\MLIntravascularPolarimetry-1000 slices\\MLCardioPullbacks\\Annotations\\Batch_1-4"
 
     ## ---------------------------------------------------------- ##
     experiment_def = args.exp_def

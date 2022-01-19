@@ -36,8 +36,8 @@ nBatch = 30
 nEpoch = 1000
 lastEpoch = 0
 dataset = 'Dataset polar Z1-L512-W512-C3.h5'
-good_data = 'D:\\MLIntravascularPolarimetry\\MLCardioPullbacks-Batch1-Ver1\\' + dataset
-bad_data = 'D:\\MLIntravascularPolarimetry\\MLCardioPullbacks-Batch1-Ver3\\' + dataset
+good_data = 'D:\\MLIntravascularPolarimetry-1000 slices\\Batch 1-low and high annotation quality\\Batch1-Ver1\\' + dataset
+bad_data = 'D:\\MLIntravascularPolarimetry-1000 slices\\Batch 1-low and high annotation quality\\Batch1-Ver3\\' + dataset
 
 
 log_file = 'model/' + exp_def + '/log-' + exp_def + '.csv'
